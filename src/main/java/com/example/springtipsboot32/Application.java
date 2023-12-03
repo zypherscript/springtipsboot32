@@ -1,8 +1,13 @@
 package com.example.springtipsboot32;
 
+import io.micrometer.observation.Observation;
+import io.micrometer.observation.ObservationRegistry;
+import io.micrometer.observation.annotation.Observed;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.concurrent.ConcurrentSkipListSet;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -135,6 +140,7 @@ record UnsecuredLoan(float interest) implements Loan {
 
 interface CatFactClient2 {
 
+  @Observed(name = "cats")
   @GetExchange("https://catfact.ninja/fact")
   CatFact getFact();
 }
@@ -165,22 +171,30 @@ record CatFact(String fact) {
 @ResponseBody
 class CatFactController {
 
+  private final Logger log = LoggerFactory.getLogger(getClass());
   private final CatFactClient catFactClient;
   private final CatFactClient2 catFactClient2;
+  private final ObservationRegistry observationRegistry;
 
-  CatFactController(CatFactClient catFactClient, CatFactClient2 catFactClient2) {
+  CatFactController(CatFactClient catFactClient, CatFactClient2 catFactClient2,
+      ObservationRegistry observationRegistry) {
     this.catFactClient = catFactClient;
     this.catFactClient2 = catFactClient2;
+    this.observationRegistry = observationRegistry;
   }
 
   @GetMapping("/catfact")
   CatFact fact() {
-    return catFactClient.fact();
+    var fact = catFactClient.fact();
+    log.info(fact.toString());
+    return fact;
   }
 
   @GetMapping("/catfact2")
   CatFact fact2() {
-    return catFactClient2.getFact();
+    return Observation
+        .createNotStarted("cats", this.observationRegistry)
+        .observe(catFactClient2::getFact);
   }
 }
 
