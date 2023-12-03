@@ -1,11 +1,18 @@
 package com.example.springtipsboot32;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.concurrent.ConcurrentSkipListSet;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Profile;
+import org.springframework.jdbc.core.simple.JdbcClient;
+import org.springframework.stereotype.Controller;
+import org.springframework.stereotype.Repository;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ResponseBody;
 
 @SpringBootApplication
 public class Application {
@@ -15,6 +22,7 @@ public class Application {
   }
 
   @Bean
+  @Profile("!default")
   ApplicationRunner loom() {
     return args -> {
       var observed = new ConcurrentSkipListSet<String>();
@@ -100,5 +108,43 @@ final class SecuredLoan implements Loan {
 }
 
 record UnsecuredLoan(float interest) implements Loan {
+
+}
+
+@Controller
+@ResponseBody
+class CustomerController {
+
+  private final CustomerRepository customerRepository;
+
+  CustomerController(CustomerRepository customerRepository) {
+    this.customerRepository = customerRepository;
+  }
+
+  @GetMapping("/customers")
+  Collection<Customer> customers() {
+    return customerRepository.customers();
+  }
+}
+
+@Repository
+class CustomerRepository {
+
+  private final JdbcClient jdbcClient;
+
+  CustomerRepository(JdbcClient jdbcClient) {
+    this.jdbcClient = jdbcClient;
+  }
+
+  Collection<Customer> customers() {
+    return this.jdbcClient.sql("""
+            select * from customer
+            """)
+        .query((rs, rowNum) -> new Customer(rs.getInt("id"), rs.getString("name")))
+        .list();
+  }
+}
+
+record Customer(Integer id, String name) {
 
 }
