@@ -8,17 +8,27 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Profile;
+import org.springframework.http.client.JdkClientHttpRequestFactory;
 import org.springframework.jdbc.core.simple.JdbcClient;
+import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Controller;
 import org.springframework.stereotype.Repository;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.client.RestClient;
 
 @SpringBootApplication
 public class Application {
 
   public static void main(String[] args) {
     SpringApplication.run(Application.class, args);
+  }
+
+  @Bean
+  RestClient restClient(RestClient.Builder builder) {
+    return builder
+        .requestFactory(new JdkClientHttpRequestFactory())
+        .build();
   }
 
   @Bean
@@ -109,6 +119,44 @@ final class SecuredLoan implements Loan {
 
 record UnsecuredLoan(float interest) implements Loan {
 
+}
+
+@Component
+class CatFactClient {
+
+  private final RestClient restClient;
+
+  CatFactClient(RestClient restClient) {
+    this.restClient = restClient;
+  }
+
+  CatFact fact() {
+    return this.restClient
+        .get()
+        .uri("https://catfact.ninja/fact")
+        .retrieve()
+        .body(CatFact.class);
+  }
+}
+
+record CatFact(String fact) {
+
+}
+
+@Controller
+@ResponseBody
+class CatFactController {
+
+  private final CatFactClient catFactClient;
+
+  CatFactController(CatFactClient catFactClient) {
+    this.catFactClient = catFactClient;
+  }
+
+  @GetMapping("/catfact")
+  CatFact fact() {
+    return catFactClient.fact();
+  }
 }
 
 @Controller
