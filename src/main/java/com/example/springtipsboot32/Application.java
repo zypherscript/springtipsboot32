@@ -16,6 +16,9 @@ import org.springframework.stereotype.Repository;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.client.RestClient;
+import org.springframework.web.client.support.RestClientAdapter;
+import org.springframework.web.service.annotation.GetExchange;
+import org.springframework.web.service.invoker.HttpServiceProxyFactory;
 
 @SpringBootApplication
 public class Application {
@@ -29,6 +32,15 @@ public class Application {
     return builder
         .requestFactory(new JdkClientHttpRequestFactory())
         .build();
+  }
+
+  @Bean
+  CatFactClient2 catFactClient2(RestClient restClient) {
+    return HttpServiceProxyFactory
+        .builder()
+        .exchangeAdapter(RestClientAdapter.create(restClient))
+        .build()
+        .createClient(CatFactClient2.class);
   }
 
   @Bean
@@ -121,6 +133,12 @@ record UnsecuredLoan(float interest) implements Loan {
 
 }
 
+interface CatFactClient2 {
+
+  @GetExchange("https://catfact.ninja/fact")
+  CatFact getFact();
+}
+
 @Component
 class CatFactClient {
 
@@ -148,14 +166,21 @@ record CatFact(String fact) {
 class CatFactController {
 
   private final CatFactClient catFactClient;
+  private final CatFactClient2 catFactClient2;
 
-  CatFactController(CatFactClient catFactClient) {
+  CatFactController(CatFactClient catFactClient, CatFactClient2 catFactClient2) {
     this.catFactClient = catFactClient;
+    this.catFactClient2 = catFactClient2;
   }
 
   @GetMapping("/catfact")
   CatFact fact() {
     return catFactClient.fact();
+  }
+
+  @GetMapping("/catfact2")
+  CatFact fact2() {
+    return catFactClient2.getFact();
   }
 }
 
