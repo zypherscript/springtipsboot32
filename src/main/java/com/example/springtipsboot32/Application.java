@@ -1,14 +1,17 @@
 package com.example.springtipsboot32;
 
+import com.example.springtipsboot32.service.CustomerClient;
 import io.micrometer.observation.Observation;
 import io.micrometer.observation.ObservationRegistry;
 import io.micrometer.observation.annotation.Observed;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.concurrent.ConcurrentSkipListSet;
+import lombok.extern.slf4j.Slf4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.ApplicationRunner;
+import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
@@ -26,10 +29,22 @@ import org.springframework.web.service.annotation.GetExchange;
 import org.springframework.web.service.invoker.HttpServiceProxyFactory;
 
 @SpringBootApplication
+@Slf4j
 public class Application {
 
   public static void main(String[] args) {
     SpringApplication.run(Application.class, args);
+  }
+
+  @Bean
+  @Profile("so-test")
+  CommandLineRunner runner(CustomerClient customerClient) {
+    return _ -> {
+      var customerDTOOptional = customerClient.getCustomer();
+      if (customerDTOOptional.isPresent()) {
+        log.info(customerDTOOptional.toString());
+      }
+    };
   }
 
   @Bean
