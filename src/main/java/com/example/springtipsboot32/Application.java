@@ -1,26 +1,21 @@
 package com.example.springtipsboot32;
 
-import com.example.springtipsboot32.client.MyRestClient;
-import com.example.springtipsboot32.model.APIResponseDTO;
+import com.example.springtipsboot32.service.CustomerClient;
 import io.micrometer.observation.Observation;
 import io.micrometer.observation.ObservationRegistry;
 import io.micrometer.observation.annotation.Observed;
-import java.lang.reflect.ParameterizedType;
-import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.concurrent.ConcurrentSkipListSet;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.ApplicationRunner;
+import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Profile;
-import org.springframework.core.ParameterizedTypeReference;
-import org.springframework.http.HttpMethod;
 import org.springframework.http.client.JdkClientHttpRequestFactory;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Component;
@@ -41,45 +36,16 @@ public class Application {
     SpringApplication.run(Application.class, args);
   }
 
-  private static <T> ParameterizedTypeReference<APIResponseDTO<T>> getParameterizedTypeReference(
-      Class<T> clazz) {
-    return new ParameterizedTypeReference<>() {
-      @Override
-      public Type getType() {
-        return new ParameterizedType() {
-          @Override
-          public Type[] getActualTypeArguments() {
-            return new Type[]{clazz};
-          }
-
-          @Override
-          public Type getRawType() {
-            return APIResponseDTO.class;
-          }
-
-          @Override
-          public Type getOwnerType() {
-            return null;
-          }
-        };
+  @Bean
+  @Profile("so-test")
+  CommandLineRunner runner(CustomerClient customerClient) {
+    return _ -> {
+      var customerDTOOptional = customerClient.getCustomer();
+      if (customerDTOOptional.isPresent()) {
+        log.info(customerDTOOptional.toString());
       }
     };
   }
-
-  public <T, R> APIResponseDTO<T> invokeAPI(R requestDTO, HttpMethod httpMethod,
-      Class<T> responseType) {
-    String productAPI = "http://localhost:8081/customers";
-    var responseDTOClass = getParameterizedTypeReference(responseType);
-    return restClient.exchange(
-        productAPI,
-        requestDTO,
-        httpMethod,
-        responseDTOClass
-    );
-  }
-
-  @Autowired
-  private MyRestClient restClient;
 
   @Bean
   RestClient restClient(RestClient.Builder builder) {

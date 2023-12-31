@@ -11,7 +11,7 @@ import org.springframework.web.client.RestTemplate;
 @Component
 public class MyRestClient extends RestTemplate {
 
-  public <T> ResponseEntity<T> execute(
+  private <T> ResponseEntity<T> execute(
       String uri,
       HttpMethod method,
       HttpEntity<?> requestEntity,
@@ -25,8 +25,7 @@ public class MyRestClient extends RestTemplate {
       HttpMethod httpMethod,
       ParameterizedTypeReference<R> responseType) {
     var responseEntity = execute(apiUrl, httpMethod, new HttpEntity<>(requestDTO), responseType);
-    if (responseEntity != null
-        && responseEntity.getStatusCode().value() >= HttpStatus.OK.value()
+    if (responseEntity.getStatusCode().value() >= HttpStatus.OK.value()
         && responseEntity.getStatusCode().value() <= HttpStatus.IM_USED.value()) {
       return responseEntity.getBody();
     } else {

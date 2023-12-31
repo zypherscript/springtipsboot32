@@ -22,7 +22,7 @@ public class APIResponseDTO<T> {
   @NoArgsConstructor
   @AllArgsConstructor
   @JsonIgnoreProperties(ignoreUnknown = true)
-  public static class CusDTO {
+  public static class CustomerDTO {
 
     @JsonProperty("name")
     private String name;
