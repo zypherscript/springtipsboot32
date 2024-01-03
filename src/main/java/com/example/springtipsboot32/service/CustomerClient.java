@@ -7,18 +7,20 @@ import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpMethod;
 import org.springframework.stereotype.Service;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class CustomerClient {
 
   private final MyRestClient restClient;
 
-  private static <T> ParameterizedTypeReference<APIResponseDTO<T>> getParameterizedTypeReference(
-      Class<T> clazz) {
+  private static <T, U> ParameterizedTypeReference<U> getParameterizedTypeReference(
+      Class<T> clazz, Class<U> mainClazz) {
     return new ParameterizedTypeReference<>() {
       @Override
       public Type getType() {
@@ -30,7 +32,7 @@ public class CustomerClient {
 
           @Override
           public Type getRawType() {
-            return APIResponseDTO.class;
+            return mainClazz;
           }
 
           @Override
@@ -44,18 +46,22 @@ public class CustomerClient {
 
   public Optional<CustomerDTO> getCustomer() {
     try {
-      var apiResponseDTO = invokeAPI("http://localhost:8081/testcustomer", null,
+      var apiResponseDTO = invokeAPI("http://localhost:8081/test",
+          null,
           HttpMethod.POST,
-          CustomerDTO.class);
-      return Optional.of(apiResponseDTO.getResult());
+          CustomerDTO.class,
+          APIResponseDTO.class);
+      var customer = (CustomerDTO) apiResponseDTO.getResult();
+      return Optional.of(customer);
     } catch (Exception e) {
+      log.error(e.getMessage(), e);
       return Optional.empty();
     }
   }
 
-  private <T, R> APIResponseDTO<T> invokeAPI(String apiUrl, R requestDTO, HttpMethod httpMethod,
-      Class<T> responseType) {
-    var responseDTOClass = getParameterizedTypeReference(responseType);
+  private <T, R, U> U invokeAPI(String apiUrl, R requestDTO, HttpMethod httpMethod,
+      Class<T> resultType, Class<U> responseType) {
+    var responseDTOClass = getParameterizedTypeReference(resultType, responseType);
     return restClient.exchange(
         apiUrl,
         requestDTO,

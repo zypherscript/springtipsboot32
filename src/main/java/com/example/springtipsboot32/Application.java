@@ -39,12 +39,8 @@ public class Application {
   @Bean
   @Profile("so-test")
   CommandLineRunner runner(CustomerClient customerClient) {
-    return _ -> {
-      var customerDTOOptional = customerClient.getCustomer();
-      if (customerDTOOptional.isPresent()) {
-        log.info(customerDTOOptional.toString());
-      }
-    };
+    return _ -> customerClient.getCustomer()
+        .ifPresent(customerDTO -> log.info(customerDTO.toString()));
   }
 
   @Bean
