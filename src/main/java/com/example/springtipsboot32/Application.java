@@ -16,6 +16,9 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Profile;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.http.client.JdkClientHttpRequestFactory;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Component;
@@ -220,8 +223,9 @@ class CustomerController {
   }
 
   @GetMapping("/customers")
-  Collection<Customer> customers() {
-    return customerRepository.customers();
+  Page<Customer> customers() {
+    var customers = customerRepository.customers().stream().toList();
+    return new PageImpl<>(customers, PageRequest.of(0, 10), customers.size());
   }
 }
 
